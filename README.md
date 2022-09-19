@@ -1,113 +1,69 @@
-# Migration guide for DataPower from local Docker deployment to conatainerized pods running on OpenShift
-
-## Local Deployment
+# Setting up a containerized DataPower local development environment 
 
 **Pre-Reqs**
 
 1. Install [Docker](https://docs.docker.com/get-docker/) or [Podman](https://podman.io/getting-started/installation) locally on your own device.
+  - If you choose to use Podman, please change the appropriate commands below from `docker` to `podman`.
   
 **Instructions**
 
 1. Create a folder for the project.
-2. Clone this repo into that parent folder.
-3. Create a folder for the virtual DatatPower container volume mounts into your parent folder.
-  - I would suggest:
-    ```
-    mkdir datapower-volume-mounts
-    ```
-4. Navigate to the folder you just created and create the following subdirectories inside of it:
+2. Create the following subdirectories inside this folder.
   - config
   - local
   - certs
+3. Change the permissions on these sub directories.
+  - Mac 
     ```
-    cd datapower-volume-mounts
-    mkdir config local certs
-    ```
-4. Change the permissions on these sub directories to allow the container to write it's volume mounted data to them.
-  - Mac/Linux
-    ```
-    chmod -R 777 config local certs
+    chmod 1777 config local certs
     ```
   - Windows 
     ```
     icacls config local certs /grant *S-1-1-0:F
     ```
     _Note: You may have to use the full path on Windows to correctly change the permissions on the directories. We haven't had the ability to test this yet._
-4. Pull the DataPower Docker image.
-  - Docker
-     ```
-     docker pull icr.io/integration/datapower/datapower-limited:10.0.4.0
-     ```
-  - Podman
-    ```
-     podman pull icr.io/integration/datapower/datapower-limited:10.0.4.0
-     ```
+4. Pull the DataPower Docker image .
+   ```
+   docker pull icr.io/integration/datapower/datapower-limited:10.0.4.0
+   ```
   - You may have to Create a [DockerID](https://hub.docker.com/).
   - And then [Login to Docker](https://docs.docker.com/engine/reference/commandline/login/).
 5. Create and run the the DataPower container with an interactive shell from the local Docker image with volume mounts.
   - Make sure you are in the directory that you created that contains the "config", "local", and "certs" folders.
-  - Also, note that exposing port 8001 is specific to the validation-flow zip and exposing port 9090 is for virtual DataPower's UI.
-    - If you are importing your own flow, you will need to change `-p 8001:8001` to whatever port('s) you need to expose.
-  - If the below commands do not work and you are running them on a Linux VM, try removing the forward slashes and condensing the command into one line.
-  - Mac/Linux - Docker
+  - Mac
     ```
-    docker run -it -e DATAPOWER_ACCEPT_LICENSE=true -e \
-    DATAPOWER_INTERACTIVE=true \
-    -v $(pwd)/config:/opt/ibm/datapower/drouter/config \
-    -v $(pwd)/local:/opt/ibm/datapower/drouter/local \
-    -v $(pwd)/certs:/opt/ibm/datapower/root/secire/user/certs \
+    docker run -it --name datapower \
+    -v $(pwd)/config:/opt/ibm/datapower/drouter/config:z \
+    -v $(pwd)/local:/opt/ibm/datapower/drouter/local:z \
+    -v $(pwd)/certs:/opt/ibm/datapower/root/secure/usrcerts:z \
+    -e DATAPOWER_ACCEPT_LICENSE="true" \
+    -e DATAPOWER_INTERACTIVE="true" \
     -p 9090:9090 \
     -p 8001:8001 \
-    --name datapower \
     icr.io/integration/datapower/datapower-limited:10.0.4.0
     ```
-  - Mac/Linux - Podman
+    _Note: Exposing port 8001 is specific to the validation-flow.zip.  Expose the correct port if importing a different flow._
+  - Windows (PowerShell)
     ```
-    podman run -it -e DATAPOWER_ACCEPT_LICENSE=true -e \
-    DATAPOWER_INTERACTIVE=true \
-    -v $(pwd)/config:/opt/ibm/datapower/drouter/config \
-    -v $(pwd)/local:/opt/ibm/datapower/drouter/local \
-    -v $(pwd)/certs:/opt/ibm/datapower/root/secire/user/certs \
+    docker run -it --name datapower \
+    -v ${PWD}/config:/opt/ibm/datapower/drouter/config:v \
+    -v ${PWD}/local:/opt/ibm/datapower/drouter/local:v \
+    -v ${PWD}/certs:/opt/ibm/datapower/root/secure/usrcerts:v \
+    -e DATAPOWER_ACCEPT_LICENSE="true" \
+    -e DATAPOWER_INTERACTIVE="true" \
     -p 9090:9090 \
     -p 8001:8001 \
-    --name datapower \
     icr.io/integration/datapower/datapower-limited:10.0.4.0
     ```
-  - Windows (PowerShell) - Docker
-    ```
-    docker run -it -e DATAPOWER_ACCEPT_LICENSE=true -e \
-    DATAPOWER_INTERACTIVE=true \
-    -v ${pwd}/config:/opt/ibm/datapower/drouter/config \
-    -v ${pwd}/local:/opt/ibm/datapower/drouter/local \
-    -v ${pwd}/certs:/opt/ibm/datapower/root/secire/user/certs \
-    -p 9090:9090 \
-    -p 8001:8001 \
-    --name datapower \
-    icr.io/integration/datapower/datapower-limited:10.0.4.0
-    ```
-  - Windows (PowerShell) - Podman
-    ```
-    podman run -it -e DATAPOWER_ACCEPT_LICENSE=true -e \
-    DATAPOWER_INTERACTIVE=true \
-    -v ${pwd}/config:/opt/ibm/datapower/drouter/config \
-    -v ${pwd}/local:/opt/ibm/datapower/drouter/local \
-    -v ${pwd}/certs:/opt/ibm/datapower/root/secire/user/certs \
-    -p 9090:9090 \
-    -p 8001:8001 \
-    --name datapower \
-    icr.io/integration/datapower/datapower-limited:10.0.4.0
-    ```
+    _Note: Exposing port 8001 is specific to the validation-flow.zip.  Expose the correct port if importing a different flow._
 6. Enable the UI.
   - login: `admin`
   - Password: `admin`
   - ```
-    configure terminal
+    co
     ```
   - ```
-    web-mgmt
-    ```
-  - ```
-    admin-state "enabled"
+    web-mgmt 0 9090 9090
     ```
   - ```
     exit
@@ -126,24 +82,13 @@
   - In the CLI enter ```write memory```
   - Optional:
     - In the GUI, export the zip file if any changes were made to a configuration.
-11. In a new terminal window, ensure that the config, and local subdirectories are no longer empty by checking their contents.
-  - If the certs subdirectory is empty, it is most likely because you did not correctly save your configuration in both the UI and the terminal.
-    - To fix this, repeat the step 10.
-    - If the certs subdirectory is still empty, it is probably because you are running on a VM that does not have temporary file write access.
-12. In your original terminal window, exit the datapower CLI
-  - Type `exit` twice and then "control+C" to return to the command prompt.
-13. (Optional) Delete the Docker container as well as the pulled DataPower Docker/Podman image if you wish.
-  - Docker
-    - ```
-      docker rm datapower
-      ```
-    - ```
-      docker rmi icr.io/integration/datapower/datapower-limited:10.0.4.0
-      ```
-  - Podman
-    - ```
-      podman rm datapower
-      ```
-    - ```
-      podman rmi icr.io/integration/datapower/datapower-limited:10.0.4.0
-      ```
+11. Exit the datapower CLI
+  - Type `exit` twice and then "control+C".
+12. Ensure that the config, local, and certs subdirectories are no longer empty.
+13. Delete the Docker container as well as remove the pulled DataPower Docker image if you wish.
+  - ```
+    docker rm datapower
+    ```
+  - ```
+    docker rmi icr.io/integration/datapower/datapower-limited:10.0.4.0
+    ```
