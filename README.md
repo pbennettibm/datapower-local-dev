@@ -74,7 +74,7 @@
   - Initially select the "default" domain.
   - There are several screens you will need to click through.
   - Accept the configuration as is.
-9. Now that you have imported your configuration, test that it is working by navigating to [http://localhost:8001](https://localhost:8001).
+9. Now that you have imported your configuration, test that it is working by navigating to [http://localhost:8001](http://localhost:8001).
   - You should see the [JSON Placeholder](https://jsonplaceholder.typicode.com/) page.
   - If for some reason it isn't working, attempt to re-import the provided zip file again and ensure that you accept all steps appropriately.
 10. Once your configuration is complete, export the config as a zip file and save everything to your mounted volumes.
